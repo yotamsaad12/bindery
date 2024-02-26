@@ -4,26 +4,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using bindecy.Interfaces;
 using bindecy.Models;
+using System.Security.AccessControl;
 
 namespace bindecy.Clases
 {
     public class FilePermissionManager : IFilePermissionInterface
     {
-        [DllImport("libc", SetLastError = true)]
-        private static extern int chmod(string pathname, int mode);
-        // user permissions
-        const int S_IRUSR = 0x100;
-        const int S_IWUSR = 0x80;
-        // group permission
-        const int S_IRGRP = 0x20;
-        const int S_IWGRP = 0x10;
-        // other permissions
-        const int S_IROTH = 0x4;
-        const int S_IWOTH = 0x2;
 
         public int Counter { get; set; }
-
-        //Chilkat.Ftp2 ftp = new Chilkat.Ftp2();
 
         public Dictionary<int,FilePermissionReq> RequestsSaver { get; set; }
 
@@ -31,8 +19,10 @@ namespace bindecy.Clases
 
         public int Register(string path, bool read, bool write)
         {
-
-            setFilePermission(path, read, write);
+            if(read || write)
+            {
+                addFilePermission(path, read, write);
+            }
             if (OperationsCounter.ContainsKey(path))
             {
                 if (read)
@@ -83,26 +73,35 @@ namespace bindecy.Clases
                             }
                             else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1) && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
                             {
-                                setFilePermission(operationToCansle.path, !operationToCansle.read, !operationToCansle.write);
                                 //run chmod only on read
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
+                                {
+                                    removeFilePermission(operationToCansle.path, operationToCansle.read);
+                                    OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                                }
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                             else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && !(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
                             {
-                                setFilePermission(operationToCansle.path, !operationToCansle.read, !operationToCansle.write);
                                 //run chmod only on write
                                 OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
+                                {
+                                    removeFilePermission(operationToCansle.path, operationToCansle.write);
+                                    OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                }
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                             else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1) && !(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
                             {
-                                setFilePermission(operationToCansle.path, !operationToCansle.read, !operationToCansle.write);
                                 //run chmod on write and read
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
+                                {
+                                    removeFilePermission(operationToCansle.path,operationToCansle.read, operationToCansle.write);
+                                    OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                    OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                                }
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                         }
@@ -115,9 +114,12 @@ namespace bindecy.Clases
                             }
                             else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1))
                             {
-                                setFilePermission(operationToCansle.path, !operationToCansle.read, !operationToCansle.write);
                                 //run chmod only on read
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                                if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
+                                {
+                                    removeFilePermission(operationToCansle.path, operationToCansle.read);
+                                    OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                                }
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                         }
@@ -130,9 +132,12 @@ namespace bindecy.Clases
                             }
                             else if (!(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
                             {
-                                setFilePermission(operationToCansle.path, !operationToCansle.read, !operationToCansle.write);
                                 //run chmod only on write
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
+                                {
+                                    removeFilePermission(operationToCansle.path, operationToCansle.write);
+                                    OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                }
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                         }
@@ -149,28 +154,42 @@ namespace bindecy.Clases
             Counter = 1;
         }
 
-        private void setFilePermission(string path,bool read,bool write)
+        private void addFilePermission(string path, [Optional] bool read, [Optional] bool write)
         {
-            if (read || write)
-            {
-                int permission = 0;
-                if (read && write)
-                {
-                    permission = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH | S_IWGRP | S_IWOTH;
-                }
-                else if (!read && write)
-                {
-                    permission = S_IWUSR | S_IWGRP | S_IWOTH;
-                }
-                else if (!read && write)
-                {
-                    permission = S_IRUSR | S_IRGRP | S_IROTH;
-                }
+            FileInfo fileInfo = new FileInfo(path);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
 
-                var res =chmod(path, (int)permission);
+            if (read)
+            {
+                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Read, AccessControlType.Allow));
             }
+            if (write)
+            {
+                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Write, AccessControlType.Allow));
+            }
+
+            fileInfo.SetAccessControl(fileSecurity);
+            
+        }
+
+        private void removeFilePermission(string path, [Optional] bool read, [Optional] bool write)
+        {
+            FileInfo fileInfo = new FileInfo(path);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
+
+            if (read)
+            {
+                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Read, AccessControlType.Deny));
+            }
+            if (write)
+            {
+                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Write, AccessControlType.Deny));
+            }
+
+            fileInfo.SetAccessControl(fileSecurity);
+
         }
     }
-	
+
 }
 
