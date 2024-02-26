@@ -33,7 +33,6 @@ namespace bindecy.Clases
                 {
                     OperationsCounter[path].NumberOfWriteCalls++;
                 }
-                
             }
             else
             {
