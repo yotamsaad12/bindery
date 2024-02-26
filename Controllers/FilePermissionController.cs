@@ -1,4 +1,7 @@
 ﻿using System;
+using System.ComponentModel;
+using System.IO;
+using bindecy.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace bindecy.Controllers;
@@ -9,25 +12,43 @@ public class FilePermissionController : ControllerBase
 {
     private readonly ILogger<FilePermissionController> _logger;
 
+    private readonly IFilePermissionInterface _filePermissiomHandler;
 
-
-    public FilePermissionController(ILogger<FilePermissionController> logger)
+    public FilePermissionController(ILogger<FilePermissionController> logger ,IFilePermissionInterface filePermissiomHandler)
     {
         _logger = logger;
+        _filePermissiomHandler = filePermissiomHandler;
     }
     
     [HttpPost]
     [Route("Register")]
     public IActionResult Register(string path,bool read,bool write)
     {
-        return Ok(1);
+        try
+        {
+            var res = _filePermissiomHandler.Register(path, read, write);
+            return Ok(res);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        
     }
 
     [HttpPost]
     [Route("UnRegister")]
     public IActionResult UnRegister(int handle)
     {
-        return Ok(1);
+        try
+        {
+            _filePermissiomHandler.UnRegister(handle);
+            return Ok("seccess");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }
 
