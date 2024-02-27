@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Windows.Input;
 using bindecy.Controllers;
 
-namespace bindecy.Clases
+namespace bindecy.Classes
 {
     public class FilePermissionManager : IFilePermissionInterface
     {
@@ -27,7 +27,7 @@ namespace bindecy.Clases
             if(read || write)
             {
                 setFilePermission(path, read, write,true);
-                _logger.LogInformation($"seccessfully run chmod command for {path}");
+                _logger.LogInformation($"successfully run chmod command for {path}");
                 if (OperationsCounter.ContainsKey(path))
                 {
                     if (read)
@@ -47,26 +47,26 @@ namespace bindecy.Clases
             Counter++;
             FilePermissionReq filePermissionReq = new FilePermissionReq(path,read,write);
             RequestsSaver.Add(Counter, filePermissionReq);
-            _logger.LogInformation($"seccessfully added to RequestsSaver with the key {Counter}");
+            _logger.LogInformation($"successfully added to RequestsSaver with the key {Counter}");
             return Counter;
         }
 
         public void UnRegister(int handle)
         {
-            var operationToCansel = RequestsSaver[handle];
-            _logger.LogInformation($"start unregister to {operationToCansel.path} file with read={operationToCansel.read} and write={operationToCansel.write}");
+            var operationToCancel = RequestsSaver[handle];
+            _logger.LogInformation($"start unregister to {operationToCancel.path} file with read={operationToCancel.read} and write={operationToCancel.write}");
             if (!RequestsSaver[handle].isUnRegister)
             {
-                bool cancelRead = operationToCansel.read && (OperationsCounter[operationToCansel.path].NumberOfReadCalls == 1);
-                bool cancelWrite = operationToCansel.write && (OperationsCounter[operationToCansel.path].NumberOfWriteCalls == 1);
-                setFilePermission(operationToCansel.path, cancelRead, cancelWrite, false);
-                if (operationToCansel.read && DecreseValue(OperationsCounter[operationToCansel.path].NumberOfReadCalls))
+                bool cancelRead = operationToCancel.read && (OperationsCounter[operationToCancel.path].NumberOfReadCalls == 1);
+                bool cancelWrite = operationToCancel.write && (OperationsCounter[operationToCancel.path].NumberOfWriteCalls == 1);
+                setFilePermission(operationToCancel.path, cancelRead, cancelWrite, false);
+                if (operationToCancel.read && DecreaseValue(OperationsCounter[operationToCancel.path].NumberOfReadCalls))
                 {
-                    OperationsCounter[operationToCansel.path].NumberOfReadCalls--;
+                    OperationsCounter[operationToCancel.path].NumberOfReadCalls--;
                 }
-                if (operationToCansel.write && DecreseValue(OperationsCounter[operationToCansel.path].NumberOfWriteCalls))
+                if (operationToCancel.write && DecreaseValue(OperationsCounter[operationToCancel.path].NumberOfWriteCalls))
                 {
-                    OperationsCounter[operationToCansel.path].NumberOfWriteCalls--;
+                    OperationsCounter[operationToCancel.path].NumberOfWriteCalls--;
                 }
                 RequestsSaver[handle].isUnRegister = true;
             }
@@ -169,7 +169,7 @@ namespace bindecy.Clases
             return command;
         }
 
-        private bool DecreseValue(int val)
+        private bool DecreaseValue(int val)
         {
             if (val != 0)
             {

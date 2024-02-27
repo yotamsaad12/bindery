@@ -1,4 +1,4 @@
-﻿using bindecy.Clases;
+﻿using bindecy.Classes;
 using bindecy.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
