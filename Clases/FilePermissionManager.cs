@@ -5,6 +5,8 @@ using System.Runtime.InteropServices;
 using bindecy.Interfaces;
 using bindecy.Models;
 using System.Security.AccessControl;
+using System.Diagnostics;
+using System.Windows.Input;
 
 namespace bindecy.Clases
 {
@@ -21,7 +23,7 @@ namespace bindecy.Clases
         {
             if(read || write)
             {
-                addFilePermission(path, read, write);
+                setFilePermission(path, read, write,true);
             }
             if (OperationsCounter.ContainsKey(path))
             {
@@ -76,7 +78,7 @@ namespace bindecy.Clases
                                 OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                                 if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
                                 {
-                                    removeFilePermission(operationToCansle.path, operationToCansle.read);
+                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
                                     OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 }
                                 RequestsSaver[handle].isUnRegister = true;
@@ -87,7 +89,7 @@ namespace bindecy.Clases
                                 OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
                                 {
-                                    removeFilePermission(operationToCansle.path, operationToCansle.write);
+                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
                                     OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                                 }
                                 RequestsSaver[handle].isUnRegister = true;
@@ -97,7 +99,7 @@ namespace bindecy.Clases
                                 //run chmod on write and read
                                 if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
                                 {
-                                    removeFilePermission(operationToCansle.path,operationToCansle.read, operationToCansle.write);
+                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
                                     OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                                     OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 }
@@ -116,7 +118,7 @@ namespace bindecy.Clases
                                 //run chmod only on read
                                 if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
                                 {
-                                    removeFilePermission(operationToCansle.path, operationToCansle.read);
+                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
                                     OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 }
                                 RequestsSaver[handle].isUnRegister = true;
@@ -134,7 +136,7 @@ namespace bindecy.Clases
                                 //run chmod only on write
                                 if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
                                 {
-                                    removeFilePermission(operationToCansle.path, operationToCansle.write);
+                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
                                     OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                                 }
                                 RequestsSaver[handle].isUnRegister = true;
@@ -153,40 +155,56 @@ namespace bindecy.Clases
             Counter = 1;
         }
 
-        private void addFilePermission(string path, [Optional] bool read, [Optional] bool write)
+        private void setFilePermission(string path, bool read, bool write,bool isAddMode)
         {
-            FileInfo fileInfo = new FileInfo(path);
-            FileSecurity fileSecurity = fileInfo.GetAccessControl();
-
-            if (read)
+            Process process = new Process();
+            string command = BuildCommand(path, isAddMode, read, write);
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Read, AccessControlType.Allow));
+                process.StartInfo.FileName = "cmd.exe";
+                process.StartInfo.Arguments = $"/C {command}";
             }
-            if (write)
+            else if (Environment.OSVersion.Platform == PlatformID.Unix ||
+                     Environment.OSVersion.Platform == PlatformID.MacOSX)
             {
-                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Write, AccessControlType.Allow));
+                process.StartInfo.FileName = "/bin/bash";
+                process.StartInfo.Arguments = $"-c '{command}'";
             }
+            else
+            {
+                throw new NotSupportedException("Unsupported operating system.");
+            }
+            process.StartInfo.RedirectStandardOutput = true; 
+            process.StartInfo.UseShellExecute = false; 
+            process.StartInfo.CreateNoWindow = true; 
 
-            fileInfo.SetAccessControl(fileSecurity);
-            
+            process.Start();
+            process.WaitForExit();
+
         }
 
-        private void removeFilePermission(string path, [Optional] bool read, [Optional] bool write)
+        private string BuildCommand(string path,bool isAddMode, bool read, bool write)
         {
-            FileInfo fileInfo = new FileInfo(path);
-            FileSecurity fileSecurity = fileInfo.GetAccessControl();
-
+            string command = "";
+            if (isAddMode)
+            {
+                command = "chmod +";
+            }
+            else
+            {
+                command = "chmod -";
+            }
             if (read)
             {
-                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Read, AccessControlType.Deny));
+                command = command + "r";
             }
             if (write)
             {
-                fileSecurity.AddAccessRule(new FileSystemAccessRule("Everyone", FileSystemRights.Write, AccessControlType.Deny));
+                command = command + "w";
             }
+            command = command + " " + path;
 
-            fileInfo.SetAccessControl(fileSecurity);
-
+            return command;
         }
     }
 
