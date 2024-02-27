@@ -7,23 +7,27 @@ using bindecy.Models;
 using System.Security.AccessControl;
 using System.Diagnostics;
 using System.Windows.Input;
+using bindecy.Controllers;
 
 namespace bindecy.Clases
 {
     public class FilePermissionManager : IFilePermissionInterface
     {
+        private readonly ILogger<FilePermissionManager> _logger;
 
-        public int Counter { get; set; }
+        private int Counter { get; set; }
 
-        public Dictionary<int,FilePermissionReq> RequestsSaver { get; set; }
+        private Dictionary<int,FilePermissionReq> RequestsSaver { get; set; }
 
-        public Dictionary<string,OperationsByFile> OperationsCounter { get; set; }
+        private Dictionary<string,OperationsByFile> OperationsCounter { get; set; }
 
         public int Register(string path, bool read, bool write)
         {
+            _logger.LogInformation($"register to {path} with read={read} and write={write}");
             if(read || write)
             {
                 setFilePermission(path, read, write,true);
+                _logger.LogInformation($"seccessfully run chmod command for {path}");
             }
             if (OperationsCounter.ContainsKey(path))
             {
@@ -52,134 +56,137 @@ namespace bindecy.Clases
             Counter++;
             FilePermissionReq filePermissionReq = new FilePermissionReq(path,read,write);
             RequestsSaver.Add(Counter, filePermissionReq);
+            _logger.LogInformation($"seccessfully added to RequestsSaver with the key {Counter}");
             return Counter;
         }
 
         public void UnRegister(int handle)
         {
             var operationToCansle = RequestsSaver[handle];
-            if (RequestsSaver.ContainsKey(handle))
+            _logger.LogInformation($"start unregister to {operationToCansle.path} file with read={operationToCansle.read} and write={operationToCansle.write}");
+            if (!RequestsSaver[handle].isUnRegister)
             {
-                if (!RequestsSaver[handle].isUnRegister)
+                if (operationToCansle.read && operationToCansle.write) 
                 {
-                    if (OperationsCounter.ContainsKey(operationToCansle.path)){
-
-                        if (operationToCansle.read && operationToCansle.write) 
+                    if(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
+                    {
+                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                    else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1) && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
+                    {
+                        //run chmod only on read
+                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                        if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
                         {
-                            if(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
-                            {
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
-                            else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1) && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
-                            {
-                                //run chmod only on read
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                                {
-                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                    OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                }
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
-                            else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && !(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
-                            {
-                                //run chmod only on write
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
-                                {
-                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                    OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                }
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
-                            else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                            {
-                                setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
+                            setFilePermission(operationToCansle.path, operationToCansle.read, false, false);
+                            OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                         }
-                        if (operationToCansle.read && !operationToCansle.write)
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                    else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && !(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
+                    {
+                        //run chmod only on write
+                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                        if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
                         {
-                            if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1)
-                            {
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
-                            else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                            {
-                                setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
+                            setFilePermission(operationToCansle.path, false, operationToCansle.write, false);
+                            OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                         }
-                        if (!operationToCansle.read && operationToCansle.write)
-                        {
-                            if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
-                            {
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
-                            else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
-                            {
-                                setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                RequestsSaver[handle].isUnRegister = true;
-                            }
-                        }
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                    else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
+                    {
+                        setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
+                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                        RequestsSaver[handle].isUnRegister = true;
                     }
                 }
-
+                else if (operationToCansle.read && !operationToCansle.write)
+                {
+                    if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1)
+                    {
+                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                    else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
+                    {
+                        setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
+                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                }
+                else if (!operationToCansle.read && operationToCansle.write)
+                {
+                    if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
+                    {
+                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                    else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
+                    {
+                        setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
+                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                        RequestsSaver[handle].isUnRegister = true;
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogInformation($"the call with the index {handle} is already done");
             }
         }
 
-        public FilePermissionManager()
+        public FilePermissionManager(ILogger<FilePermissionManager> logger)
         {
             RequestsSaver = new Dictionary<int, FilePermissionReq>();
             OperationsCounter = new Dictionary<string, OperationsByFile>();
-            Counter = 1;
+            Counter = 0;
+            _logger = logger;
         }
 
         private void setFilePermission(string path, bool read, bool write,bool isAddMode)
         {
-            Process process = new Process();
-            string command = BuildCommand(path, isAddMode, read, write);
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                process.StartInfo.FileName = "cmd.exe";
-                process.StartInfo.Arguments = $"/C {command}";
+                _logger.LogInformation("operating system is windows");
+                if (System.IO.File.Exists(path))
+                {
+                    var command = BuildCommandForWindows(path, isAddMode, read, write);
+                    _logger.LogInformation($"the command :{command}");
+                    Process.Start("icacls",command ).WaitForExit();
+                }
             }
             else if (Environment.OSVersion.Platform == PlatformID.Unix ||
                      Environment.OSVersion.Platform == PlatformID.MacOSX)
             {
-                process.StartInfo.FileName = "/bin/bash";
-                process.StartInfo.Arguments = $"-c {command}";
+                _logger.LogInformation("operating system is linux/mac");
+                if (System.IO.File.Exists(path))
+                {
+                    var command = BuildCommandForMac(path, isAddMode, read, write);
+                    _logger.LogInformation($"the command :{command}");
+                    Process.Start("chmod",command ).WaitForExit();
+                }
             }
             else
             {
                 throw new NotSupportedException("Unsupported operating system.");
             }
-            process.StartInfo.UseShellExecute = true; 
-            process.StartInfo.CreateNoWindow = true; 
-
-            process.Start();
-            process.WaitForExit();
 
         }
 
-        private string BuildCommand(string path,bool isAddMode, bool read, bool write)
+        private string BuildCommandForMac(string path,bool isAddMode, bool read, bool write)
         {
-            string command = "";
+            string command = "u";
             if (isAddMode)
             {
-                command = "chmod +";
+                command = "+";
             }
             else
             {
-                command = "chmod -";
+                command = "-";
             }
             if (read)
             {
@@ -191,6 +198,37 @@ namespace bindecy.Clases
             }
             command = command + " " + path;
 
+            return command;
+        }
+
+        private string BuildCommandForWindows(string path, bool isAddMode, bool read, bool write)
+        {
+            string command = path;
+            if (isAddMode)
+            {
+                command = command+ " /grant Everyone:(";
+            }
+            else
+            {
+                command = command + " /deny Everyone:(";
+            }
+            if (read)
+            {
+                command = command + "R";
+            }
+            if (write)
+            {
+                if (command[command.Length - 1].Equals("R"))
+                {
+                    command = command + ",W)";
+                }
+                else
+                {
+                    command = command + "W)";
+                }
+                
+            }
+            
             return command;
         }
     }

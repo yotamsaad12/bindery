@@ -17,7 +17,6 @@
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.csproj.CoreCompileInputs.cache
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.MvcApplicationPartsAssemblyInfo.cs
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.MvcApplicationPartsAssemblyInfo.cache
-/Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.sourcelink.json
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.build.json
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.development.json
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets/msbuild.bindecy.Microsoft.AspNetCore.StaticWebAssets.props
