@@ -94,15 +94,11 @@ namespace bindecy.Clases
                                 }
                                 RequestsSaver[handle].isUnRegister = true;
                             }
-                            else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1) && !(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
+                            else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
                             {
-                                //run chmod on write and read
-                                if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                                {
-                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                    OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                    OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                }
+                                setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
+                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
+                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                         }
@@ -113,14 +109,10 @@ namespace bindecy.Clases
                                 OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 RequestsSaver[handle].isUnRegister = true;
                             }
-                            else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1))
+                            else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
                             {
-                                //run chmod only on read
-                                if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                                {
-                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                    OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                                }
+                                setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
+                                OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                         }
@@ -131,14 +123,10 @@ namespace bindecy.Clases
                                 OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                                 RequestsSaver[handle].isUnRegister = true;
                             }
-                            else if (!(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
+                            else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
                             {
-                                //run chmod only on write
-                                if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
-                                {
-                                    setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                                    OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                                }
+                                setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
+                                OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
                                 RequestsSaver[handle].isUnRegister = true;
                             }
                         }
@@ -167,14 +155,13 @@ namespace bindecy.Clases
             else if (Environment.OSVersion.Platform == PlatformID.Unix ||
                      Environment.OSVersion.Platform == PlatformID.MacOSX)
             {
-                process.StartInfo.FileName = "/Users/gy/Documents/bindecy/bindecy";
+                process.StartInfo.FileName = "/bin/bash";
                 process.StartInfo.Arguments = $"-c {command}";
             }
             else
             {
                 throw new NotSupportedException("Unsupported operating system.");
             }
-            //process.StartInfo.RedirectStandardOutput = true; 
             process.StartInfo.UseShellExecute = true; 
             process.StartInfo.CreateNoWindow = true; 
 
