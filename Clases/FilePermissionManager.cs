@@ -62,76 +62,22 @@ namespace bindecy.Clases
 
         public void UnRegister(int handle)
         {
-            var operationToCansle = RequestsSaver[handle];
-            _logger.LogInformation($"start unregister to {operationToCansle.path} file with read={operationToCansle.read} and write={operationToCansle.write}");
+            var operationToCansel = RequestsSaver[handle];
+            _logger.LogInformation($"start unregister to {operationToCansel.path} file with read={operationToCansel.read} and write={operationToCansel.write}");
             if (!RequestsSaver[handle].isUnRegister)
             {
-                if (operationToCansle.read && operationToCansle.write) 
+                bool cancelRead = operationToCansel.read && (OperationsCounter[operationToCansel.path].NumberOfReadCalls == 1);
+                bool cancelWrite = operationToCansel.write && (OperationsCounter[operationToCansel.path].NumberOfWriteCalls == 1);
+                setFilePermission(operationToCansel.path, cancelRead, cancelWrite, false);
+                if (operationToCansel.read && DecreseValue(OperationsCounter[operationToCansel.path].NumberOfReadCalls))
                 {
-                    if(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
-                    {
-                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
-                    else if (!(OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1) && OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
-                    {
-                        //run chmod only on read
-                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                        if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                        {
-                            setFilePermission(operationToCansle.path, operationToCansle.read, false, false);
-                            OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                        }
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
-                    else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1 && !(OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1))
-                    {
-                        //run chmod only on write
-                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                        if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
-                        {
-                            setFilePermission(operationToCansle.path, false, operationToCansle.write, false);
-                            OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                        }
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
-                    else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1 && OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                    {
-                        setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
+                    OperationsCounter[operationToCansel.path].NumberOfReadCalls--;
                 }
-                else if (operationToCansle.read && !operationToCansle.write)
+                if (operationToCansel.write && DecreseValue(OperationsCounter[operationToCansel.path].NumberOfWriteCalls))
                 {
-                    if (OperationsCounter[operationToCansle.path].NumberOfReadCalls > 1)
-                    {
-                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
-                    else if (OperationsCounter[operationToCansle.path].NumberOfReadCalls == 1)
-                    {
-                        setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                        OperationsCounter[operationToCansle.path].NumberOfReadCalls--;
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
+                    OperationsCounter[operationToCansel.path].NumberOfWriteCalls--;
                 }
-                else if (!operationToCansle.read && operationToCansle.write)
-                {
-                    if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls > 1)
-                    {
-                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
-                    else if (OperationsCounter[operationToCansle.path].NumberOfWriteCalls == 1)
-                    {
-                        setFilePermission(operationToCansle.path, operationToCansle.read, operationToCansle.write, false);
-                        OperationsCounter[operationToCansle.path].NumberOfWriteCalls--;
-                        RequestsSaver[handle].isUnRegister = true;
-                    }
-                }
+                RequestsSaver[handle].isUnRegister = true;
             }
             else
             {
@@ -230,6 +176,18 @@ namespace bindecy.Clases
             }
             
             return command;
+        }
+
+        private bool DecreseValue(int val)
+        {
+            if (val != 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 

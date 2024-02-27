@@ -17,13 +17,13 @@
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.csproj.CoreCompileInputs.cache
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.MvcApplicationPartsAssemblyInfo.cs
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.MvcApplicationPartsAssemblyInfo.cache
-/Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.build.json
-/Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.development.json
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets/msbuild.bindecy.Microsoft.AspNetCore.StaticWebAssets.props
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets/msbuild.build.bindecy.props
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets/msbuild.buildMultiTargeting.bindecy.props
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets/msbuild.buildTransitive.bindecy.props
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.pack.json
+/Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.build.json
+/Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/staticwebassets.development.json
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/scopedcss/bundle/bindecy.styles.css
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.csproj.CopyComplete
 /Users/gy/Documents/bindecy/bindecy/obj/Debug/net7.0/bindecy.dll
