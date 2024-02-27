@@ -167,15 +167,15 @@ namespace bindecy.Clases
             else if (Environment.OSVersion.Platform == PlatformID.Unix ||
                      Environment.OSVersion.Platform == PlatformID.MacOSX)
             {
-                process.StartInfo.FileName = "/bin/bash";
-                process.StartInfo.Arguments = $"-c '{command}'";
+                process.StartInfo.FileName = "/Users/gy/Documents/bindecy/bindecy";
+                process.StartInfo.Arguments = $"-c {command}";
             }
             else
             {
                 throw new NotSupportedException("Unsupported operating system.");
             }
-            process.StartInfo.RedirectStandardOutput = true; 
-            process.StartInfo.UseShellExecute = false; 
+            //process.StartInfo.RedirectStandardOutput = true; 
+            process.StartInfo.UseShellExecute = true; 
             process.StartInfo.CreateNoWindow = true; 
 
             process.Start();
