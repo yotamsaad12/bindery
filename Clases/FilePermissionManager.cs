@@ -28,30 +28,21 @@ namespace bindecy.Clases
             {
                 setFilePermission(path, read, write,true);
                 _logger.LogInformation($"seccessfully run chmod command for {path}");
-            }
-            if (OperationsCounter.ContainsKey(path))
-            {
-                if (read)
+                if (OperationsCounter.ContainsKey(path))
                 {
-                    OperationsCounter[path].NumberOfReadCalls++;
+                    if (read)
+                    {
+                        OperationsCounter[path].NumberOfReadCalls++;
+                    }
+                    if (write)
+                    {
+                        OperationsCounter[path].NumberOfWriteCalls++;
+                    }
                 }
-                if (write)
+                else
                 {
-                    OperationsCounter[path].NumberOfWriteCalls++;
+                    AddNewOperationByFileToOperationsCounter(path, read, write);
                 }
-            }
-            else
-            {
-                OperationsByFile operationsByFile = new OperationsByFile();
-                if (read)
-                {
-                    operationsByFile.NumberOfReadCalls++;
-                }
-                if (write)
-                {
-                    operationsByFile.NumberOfWriteCalls++;
-                }
-                OperationsCounter.Add(path, operationsByFile);
             }
             Counter++;
             FilePermissionReq filePermissionReq = new FilePermissionReq(path,read,write);
@@ -125,7 +116,7 @@ namespace bindecy.Clases
 
         private string BuildCommandForMac(string path,bool isAddMode, bool read, bool write)
         {
-            string command = "u";
+            string command = "o";
             if (isAddMode)
             {
                 command = "+";
@@ -188,6 +179,20 @@ namespace bindecy.Clases
             {
                 return false;
             }
+        }
+
+        private void AddNewOperationByFileToOperationsCounter(string path,bool read,bool write)
+        {
+            OperationsByFile operationsByFile = new OperationsByFile();
+            if (read)
+            {
+                operationsByFile.NumberOfReadCalls++;
+            }
+            if (write)
+            {
+                operationsByFile.NumberOfWriteCalls++;
+            }
+            OperationsCounter.Add(path, operationsByFile);
         }
     }
 
